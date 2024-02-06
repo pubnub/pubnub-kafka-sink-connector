@@ -1,7 +1,7 @@
 {
     "name": "pubnub-sink-connector",
     "config": {
-        "topics":"pubnub,pubnub1",
+        "topics":"pubnub",
         "topics.regex":"",
         "pubnub.user_id" : "myUserId123",
         "pubnub.publish_key": "demo",
