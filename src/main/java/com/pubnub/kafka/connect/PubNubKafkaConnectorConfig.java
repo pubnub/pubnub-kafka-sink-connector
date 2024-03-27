@@ -39,7 +39,7 @@ public class PubNubKafkaConnectorConfig extends AbstractConfig {
                         "The PubNub Publish API KEY")
                 .define(
                         "pubnub.secret_key",
-                        Type.STRING,
+                        Type.PASSWORD,
                         Importance.HIGH,
                         "The PubNub Secret API KEY")
                 .define(

@@ -3,11 +3,13 @@ package com.pubnub.kafka.connect;
 import com.pubnub.api.PNConfiguration;
 import com.pubnub.api.PubNub;
 import com.pubnub.api.UserId;
+import org.apache.kafka.common.config.types.Password;
 import org.apache.kafka.connect.sink.ErrantRecordReporter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.apache.kafka.connect.sink.SinkTaskContext;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +19,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class PubNubKafkaSinkConnectorTask extends SinkTask {
     private final Logger log = LoggerFactory.getLogger(this.toString());
+
+    @VisibleForTesting
+    void setOverridePubNubInstance(PubNub pubnub) {
+        this.pubnub = pubnub;
+    }
+
+    @VisibleForTesting
+    PubNub getPubnub() {
+        return pubnub;
+    }
 
     @Nullable
     private PubNub pubnub;
@@ -44,12 +56,12 @@ public class PubNubKafkaSinkConnectorTask extends SinkTask {
             final UserId userId = new UserId(config.getString("pubnub.user_id"));
             String publishKey = config.getString("pubnub.publish_key");
             String subscribeKey = config.getString("pubnub.subscribe_key");
-            String secretKey = config.getString("pubnub.secret_key");
+            Password secretKey = config.getPassword("pubnub.secret_key");
 
             PNConfiguration pnConfiguration = new PNConfiguration(userId);
             pnConfiguration.setPublishKey(publishKey);
             pnConfiguration.setSubscribeKey(subscribeKey);
-            pnConfiguration.setSecretKey(secretKey);
+            pnConfiguration.setSecretKey(secretKey.value());
             // TODO do we want to employ a retry strategy?
             pubnub = new PubNub(pnConfiguration);
         } catch (Exception exception) {
