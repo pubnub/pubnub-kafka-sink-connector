@@ -14,7 +14,6 @@ import org.apache.kafka.connect.sink.SinkTaskContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 
 import java.util.HashMap;
 import java.util.List;
@@ -31,11 +30,10 @@ class PubNubKafkaSinkConnectorTaskTest {
     PubNubKafkaSinkConnectorTask task;
 
     @BeforeEach
-    public void before() throws PubNubException {
+    public void before() {
         pubNub = mock();
-        task = new PubNubKafkaSinkConnectorTask();
+        task = new PubNubKafkaSinkConnectorTask(pubNub);
     }
-
 
     @Test
     public void testPut() {
@@ -54,7 +52,6 @@ class PubNubKafkaSinkConnectorTaskTest {
         when(publish2.channel(any())).thenReturn(publish2);
         when(publish2.message(any())).thenReturn(publish2);
 
-        task.setOverridePubNubInstance(pubNub);
         task.put(List.of(
                 new SinkRecord(expectedTopic, 0, null, null, null, expectedValue, 0L),
                 new SinkRecord(expectedTopic2, 0, null, null, null, expectedValue2, 0L)
@@ -92,7 +89,6 @@ class PubNubKafkaSinkConnectorTaskTest {
 
     @Test
     public void testStop() {
-        task.setOverridePubNubInstance(pubNub);
         task.stop();
 
         verify(pubNub).destroy();
@@ -112,8 +108,6 @@ class PubNubKafkaSinkConnectorTaskTest {
         SinkTaskContext context = mock();
         ErrantRecordReporter reporter = mock();
         when(context.errantRecordReporter()).thenReturn(reporter);
-
-        task.setOverridePubNubInstance(pubNub);
 
         task.initialize(context);
         task.put(List.of(

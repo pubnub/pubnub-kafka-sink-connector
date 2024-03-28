@@ -1,10 +1,11 @@
 package com.pubnub.kafka.connect;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.kafka.common.config.ConfigException;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -12,15 +13,14 @@ public class PubNubConnectorConfigTest {
 
     @Test
     public void basicParamsAreMandatory() {
-        assertThrows(ConfigException.class, () -> {
-            Map<String, String> props = new HashMap<>();
-            new PubNubKafkaConnectorConfig(props);
-        });
-    }
+        List<String> mandatoryParams = List.of("pubnub.user_id", "pubnub.subscribe_key", "pubnub.publish_key", "pubnub.secret_key");
 
-    public void checkingNonRequiredDefaults() {
-        Map<String, String> props = new HashMap<>();
-        PubNubKafkaConnectorConfig config = new PubNubKafkaConnectorConfig(props);
-    }
+        for (String value : mandatoryParams) {
+            Map<String, String> props = mandatoryParams.stream().filter(s -> !s.equals(value)).collect(Collectors.toMap(s -> s, s -> "value"));
+            assertThrows(ConfigException.class, () -> {
+                new PubNubKafkaConnectorConfig(props);
+            });
+        }
 
+    }
 }

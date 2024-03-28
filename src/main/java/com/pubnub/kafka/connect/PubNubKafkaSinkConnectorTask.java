@@ -18,12 +18,15 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class PubNubKafkaSinkConnectorTask extends SinkTask {
-    private final Logger log = LoggerFactory.getLogger(this.toString());
+
+    public PubNubKafkaSinkConnectorTask() {}
 
     @VisibleForTesting
-    void setOverridePubNubInstance(PubNub pubnub) {
+    PubNubKafkaSinkConnectorTask(@Nullable PubNub pubnub) {
         this.pubnub = pubnub;
     }
+
+    private final Logger log = LoggerFactory.getLogger(this.toString());
 
     @VisibleForTesting
     PubNub getPubnub() {
