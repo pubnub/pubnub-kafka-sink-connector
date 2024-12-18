@@ -2,7 +2,6 @@ package com.pubnub.kafka.connect;
 
 import com.pubnub.api.PNConfiguration;
 import com.pubnub.api.PubNub;
-import com.pubnub.api.PubNubException;
 import com.pubnub.api.callbacks.PNCallback;
 import com.pubnub.api.endpoints.pubsub.Publish;
 import com.pubnub.api.models.consumer.PNErrorData;
@@ -17,6 +16,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,7 +32,7 @@ class PubNubKafkaSinkConnectorTaskTest {
     @BeforeEach
     public void before() {
         pubNub = mock();
-        task = new PubNubKafkaSinkConnectorTask(pubNub);
+        task = new PubNubKafkaSinkConnectorTask(pubNub, null);
     }
 
     @Test
@@ -78,6 +78,7 @@ class PubNubKafkaSinkConnectorTaskTest {
         config.put("pubnub.subscribe_key", expectedSubscribeKey);
         config.put("pubnub.publish_key", expectedPublishKey);
         config.put("pubnub.secret_key", expectedSecretKey);
+        config.put("pubnub.router", RouterImpl.class.getName());
         task.start(config);
 
         PNConfiguration pnConfig = task.getPubnub().getConfiguration();
@@ -85,6 +86,64 @@ class PubNubKafkaSinkConnectorTaskTest {
         assertEquals(expectedSubscribeKey, pnConfig.getSubscribeKey());
         assertEquals(expectedPublishKey, pnConfig.getPublishKey());
         assertEquals(expectedSecretKey, pnConfig.getSecretKey());
+        assertInstanceOf(RouterImpl.class, task.getRouter());
+    }
+
+    static public class RouterImpl implements PubNubKafkaRouter {
+        @Override
+        public ChannelAndMessage route(SinkRecord record) {
+            Object message = record.value();
+            if (message instanceof Map<?, ?>) {
+                String channel = (String) ((Map<?, ?>) message).get("channel");
+                Object value = (Object) ((Map<?, ?>) message).get("message");
+                return new ChannelAndMessage(channel, value);
+            }
+            throw new RuntimeException("Invalid message");
+        }
+    }
+
+    @Test
+    public void testRouter() {
+        task = new PubNubKafkaSinkConnectorTask(pubNub, new RouterImpl());
+        String expectedTopic = "chan1";
+        String expectedMessage = "some_message";
+        Object expectedValue = new HashMap<String, Object>() {
+            {
+                put("channel", expectedTopic);
+                put("message", expectedMessage);
+            }
+        };
+        String expectedTopic2 = "chan2";
+        String expectedMessage2 = "some_message2";
+        Object expectedValue2 = new HashMap<String, Object>() {
+            {
+                put("channel", expectedTopic2);
+                put("message", expectedMessage2);
+            }
+        };
+
+        Publish publish = mock();
+        Publish publish2 = mock();
+        when(pubNub.publish()).thenReturn(publish, publish2);
+
+        when(publish.channel(any())).thenReturn(publish);
+        when(publish.message(any())).thenReturn(publish);
+
+        when(publish2.channel(any())).thenReturn(publish2);
+        when(publish2.message(any())).thenReturn(publish2);
+
+        task.put(List.of(
+                new SinkRecord("abc", 0, null, null, null, expectedValue, 0L),
+                new SinkRecord("def", 0, null, null, null, expectedValue2, 0L)
+        ));
+
+        verify(publish).channel(expectedTopic);
+        verify(publish).message(expectedMessage);
+        verify(publish).async(any());
+
+        verify(publish2).channel(expectedTopic2);
+        verify(publish2).message(expectedMessage2);
+        verify(publish2).async(any());
     }
 
     @Test

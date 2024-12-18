@@ -47,7 +47,14 @@ public class PubNubKafkaConnectorConfig extends AbstractConfig {
                         Type.INT,
                         5000,
                         Importance.HIGH,
-                        "Sleep timeout used by tasks during each poll");
+                        "Sleep timeout used by tasks during each poll")
+                .define(
+                        "pubnub.router",
+                        Type.CLASS,
+                        null,
+                        Importance.LOW,
+                        "A concrete subclass of com.pubnub.kafka.connect.PubNubKafkaRouter, " +
+                                "a class with a public, no-argument constructor.");
     }
 
 }
