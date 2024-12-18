@@ -91,8 +91,8 @@ public class PubNubKafkaSinkConnectorTask extends SinkTask {
         if (pubnub != null) {
             PubNubKafkaRouter.ChannelAndMessage channelAndMessage = router.route(record);
             pubnub.publish()
-                    .channel(channelAndMessage.channel)
-                    .message(channelAndMessage.message)
+                    .channel(channelAndMessage.getChannel())
+                    .message(channelAndMessage.getMessage())
                     .async((result, publishStatus) -> {
                         if (publishStatus.isError()) {
                             log.error("⛔️ Channel: '{}' Message {}: '{}' Publishing to PubNub Failed!", record.topic(), record.kafkaOffset(), record.value());

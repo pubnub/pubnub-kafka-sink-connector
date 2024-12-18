@@ -6,8 +6,16 @@ public interface PubNubKafkaRouter {
     ChannelAndMessage route(SinkRecord record);
 
     class ChannelAndMessage {
-        String channel;
-        Object message;
+        private final String channel;
+        private final Object message;
+
+        public String getChannel() {
+            return channel;
+        }
+
+        public Object getMessage() {
+            return message;
+        }
 
         public ChannelAndMessage(String channel, Object message) {
             this.channel = channel;
