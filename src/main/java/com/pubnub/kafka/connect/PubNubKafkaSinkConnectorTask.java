@@ -22,15 +22,24 @@ public class PubNubKafkaSinkConnectorTask extends SinkTask {
     public PubNubKafkaSinkConnectorTask() {}
 
     @VisibleForTesting
-    PubNubKafkaSinkConnectorTask(@Nullable PubNub pubnub) {
+    PubNubKafkaSinkConnectorTask(@Nullable PubNub pubnub, @Nullable PubNubKafkaRouter router) {
         this.pubnub = pubnub;
+        if (router != null) {
+            this.router = router;
+        }
     }
 
     private final Logger log = LoggerFactory.getLogger(this.toString());
 
     @VisibleForTesting
+    @Nullable
     PubNub getPubnub() {
         return pubnub;
+    }
+
+    @VisibleForTesting
+    PubNubKafkaRouter getRouter() {
+        return router;
     }
 
     @Nullable
@@ -38,6 +47,8 @@ public class PubNubKafkaSinkConnectorTask extends SinkTask {
 
     @Nullable
     private ErrantRecordReporter reporter;
+
+    private PubNubKafkaRouter router = record -> new PubNubKafkaRouter.ChannelAndMessage(record.topic(), record.value());
 
     @Override
     public String version() {
@@ -60,7 +71,10 @@ public class PubNubKafkaSinkConnectorTask extends SinkTask {
             String publishKey = config.getString("pubnub.publish_key");
             String subscribeKey = config.getString("pubnub.subscribe_key");
             Password secretKey = config.getPassword("pubnub.secret_key");
-
+            Class<?> routerClass = config.getClass("pubnub.router");
+            if (routerClass != null) {
+                router = (PubNubKafkaRouter) routerClass.getConstructor().newInstance();
+            }
             PNConfiguration pnConfiguration = new PNConfiguration(userId);
             pnConfiguration.setPublishKey(publishKey);
             pnConfiguration.setSubscribeKey(subscribeKey);
@@ -73,11 +87,12 @@ public class PubNubKafkaSinkConnectorTask extends SinkTask {
         }
     }
 
-    private void publish(SinkRecord record) {
+    private void publish(SinkRecord record, PubNubKafkaRouter router) {
         if (pubnub != null) {
+            PubNubKafkaRouter.ChannelAndMessage channelAndMessage = router.route(record);
             pubnub.publish()
-                    .channel(record.topic())
-                    .message(record.value())
+                    .channel(channelAndMessage.getChannel())
+                    .message(channelAndMessage.getMessage())
                     .async((result, publishStatus) -> {
                         if (publishStatus.isError()) {
                             log.error("⛔️ Channel: '{}' Message {}: '{}' Publishing to PubNub Failed!", record.topic(), record.kafkaOffset(), record.value());
@@ -94,7 +109,7 @@ public class PubNubKafkaSinkConnectorTask extends SinkTask {
     @Override
     public void put(Collection<SinkRecord> records) {
         for (final SinkRecord record : records) {
-            publish(record);
+            publish(record, router);
         }
     }
 
