@@ -7,6 +7,8 @@ services:
     image: confluentinc/cp-kafka:7.3.1
     hostname: kafka
     container_name: kafka
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "9092:9092"
     environment:
@@ -36,6 +38,8 @@ services:
     image: confluentinc/cp-kafka-connect-base:7.3.1
     hostname: connect
     container_name: connect
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       kafka:
         condition: service_healthy
@@ -76,6 +80,8 @@ services:
     image: maven:3.8-openjdk-18
     hostname: builder
     container_name: builder
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - .:/usr/share/java/kafka-connector-pubnub
     command: "bash -c 'cd /usr/share/java/kafka-connector-pubnub; mvn clean package'"
@@ -84,6 +90,8 @@ services:
     image: confluentinc/cp-kafka:7.3.1
     hostname: producer
     container_name: producer
+    security_opt:
+      - no-new-privileges:true
     command:
       - /bin/sh
       - -c
@@ -103,6 +111,8 @@ services:
     image: confluentinc/cp-kafka:7.3.1
     hostname: consumer
     container_name: consumer
+    security_opt:
+      - no-new-privileges:true
     command: "bash -c 'while true; do /usr/bin/kafka-console-consumer --bootstrap-server kafka:29092 --topic pubnub; sleep 1; done'"
     depends_on:
       connect:
